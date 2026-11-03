@@ -35,6 +35,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def get_or_404(session: Session, application_id: int) -> Application:
+    application = session.get(Application, application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
+
+
 @app.get("/applications/{application_id}", response_model=ApplicationRead)
 def get_application(application_id: int, session: SessionDep):
     return get_or_404(session, application_id)
@@ -52,9 +59,9 @@ def create_application(data: ApplicationCreate, session: SessionDep):
 def list_applications(session: SessionDep, status: Status | None = None):
     query = select(Application)
     if status is not None:
-        query = query.filter(Application.status == status)
-        query = query.order_by(col(Application.applied_on).desc())
-        return session.exec(query).all()
+        query = query.where(Application.status == status)
+    query = query.order_by(col(Application.applied_on).desc())
+    return session.exec(query).all()
 
 @app.get("/applications/{application_id}",
 response_model=ApplicationRead,)
