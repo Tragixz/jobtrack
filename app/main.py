@@ -7,12 +7,6 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Response
 from sqlmodel import Session, col, select
 
-from contextlib import asynccontextmanager
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException
-from sqlmodel import Session, col, select
-
 from app.database import create_db, get_session
 from app.models import (
     Application,
@@ -24,16 +18,19 @@ from app.models import (
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     create_db()
     yield
+
 
 app = FastAPI(
     title="JobTrack",
     description="An API for tracking jobs",
     lifespan=lifespan,
 )
+
 
 def get_or_404(session: Session, application_id: int) -> Application:
     application = session.get(Application, application_id)
@@ -55,6 +52,7 @@ def create_application(data: ApplicationCreate, session: SessionDep):
     session.refresh(application)
     return application
 
+
 @app.get("/applications", response_model=list[ApplicationRead])
 def list_applications(session: SessionDep, status: Status | None = None):
     query = select(Application)
@@ -63,10 +61,14 @@ def list_applications(session: SessionDep, status: Status | None = None):
     query = query.order_by(col(Application.applied_on).desc())
     return session.exec(query).all()
 
-@app.get("/applications/{application_id}",
-response_model=ApplicationRead,)
+
+@app.get(
+    "/applications/{application_id}",
+    response_model=ApplicationRead,
+)
 def get_application(application_id: int, session: SessionDep):
     return get_or_404(session, application_id)
+
 
 @app.patch("/applications/{application_id}", response_model=ApplicationRead)
 def update_application(application_id: int, data: ApplicationUpdate, session: SessionDep):
@@ -77,11 +79,13 @@ def update_application(application_id: int, data: ApplicationUpdate, session: Se
     session.refresh(application)
     return application
 
+
 @app.delete("/applications/{application_id}", status_code=204)
 def delete_application(application_id: int, session: SessionDep):
     application = get_or_404(session, application_id)
     session.delete(application)
     session.commit()
+
 
 @app.get("/stats")
 def get_stats(session: SessionDep):
@@ -120,4 +124,3 @@ def export_csv(session: SessionDep):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=applications.csv"},
     )
-
