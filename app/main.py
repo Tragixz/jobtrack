@@ -1,3 +1,12 @@
+import csv
+import io
+from contextlib import asynccontextmanager
+from datetime import date
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, HTTPException, Response
+from sqlmodel import Session, col, select
+
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -67,5 +76,41 @@ def delete_application(application_id: int, session: SessionDep):
     session.delete(application)
     session.commit()
 
+@app.get("/stats")
+def get_stats(session: SessionDep):
+    applications = session.exec(select(Application)).all()
+    counts = {s.value: 0 for s in Status}
+    for application in applications:
+        counts[Status(application.status).value] += 1
 
+    total = len(applications)
+    responded = total - counts["applied"] - counts["ghosted"]
+    response_rate = round(responded / total * 100, 1) if total else 0.0
+    return {"total": total, "by_status": counts, "response_rate": response_rate}
+
+
+@app.get("/follow-ups", response_model=list[ApplicationRead])
+def get_follow_ups(session: SessionDep):
+    """Applications that are still active and due for a follow-up."""
+    query = (
+        select(Application)
+        .where(col(Application.follow_up_on) <= date.today())
+        .where(col(Application.status).in_([Status.applied, Status.interviewing]))
+    )
+    return session.exec(query).all()
+
+
+@app.get("/export")
+def export_csv(session: SessionDep):
+    applications = session.exec(select(Application)).all()
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=list(ApplicationRead.model_fields))
+    writer.writeheader()
+    for application in applications:
+        writer.writerow(application.model_dump(mode="json"))
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=applications.csv"},
+    )
 
