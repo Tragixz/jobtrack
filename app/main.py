@@ -39,9 +39,7 @@ def get_or_404(session: Session, application_id: int) -> Application:
     return application
 
 
-@app.get("/applications/{application_id}", response_model=ApplicationRead)
-def get_application(application_id: int, session: SessionDep):
-    return get_or_404(session, application_id)
+
 
 
 @app.post("/applications", response_model=ApplicationRead, status_code=201)

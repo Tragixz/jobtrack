@@ -1,10 +1,10 @@
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class Status(str, Enum):
+class Status(StrEnum):
     applied = "applied"
     interviewing = "interviewing"
     offer = "offer"
