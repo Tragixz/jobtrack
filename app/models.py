@@ -42,3 +42,23 @@ class ApplicationUpdate(SQLModel):
     follow_up_on: date | None = None
     url: str | None = None
     notes: str | None = None
+
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True, max_length=50)
+    hashed_password: str
+
+
+class UserCreate(SQLModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class UserRead(SQLModel):
+    id: int
+    username: str
+
+
+class Token(SQLModel):
+    access_token: str
+    token_type: str = "bearer"

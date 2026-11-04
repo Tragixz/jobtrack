@@ -102,3 +102,48 @@ def test_home_page(client):
     response = client.get("/")
     assert response.status_code == 200
     assert "JobTrack" in response.text
+
+def signup(client, username="alice", password="password123"):
+    return client.post("/auth/signup", json={"username": username, "password": password})
+
+
+def login(client, username="alice", password="password123"):
+    return client.post("/auth/login", data={"username": username, "password": password})
+
+
+def test_signup_and_login(client):
+    response = signup(client)
+    assert response.status_code == 201
+    assert "password" not in response.json()
+    assert "hashed_password" not in response.json()
+
+    response = login(client)
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+
+    me = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200
+    assert me.json()["username"] == "alice"
+
+
+def test_signup_rejects_duplicate_username(client):
+    signup(client)
+    assert signup(client).status_code == 409
+
+
+def test_signup_rejects_short_password(client):
+    assert signup(client, password="short").status_code == 422
+
+
+def test_login_rejects_wrong_password(client):
+    signup(client)
+    assert login(client, password="wrong-password").status_code == 401
+
+
+def test_me_requires_login(client):
+    assert client.get("/auth/me").status_code == 401
+
+
+def test_me_rejects_fake_token(client):
+    response = client.get("/auth/me", headers={"Authorization": "Bearer fake-token"})
+    assert response.status_code == 401

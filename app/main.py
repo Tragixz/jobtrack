@@ -7,9 +7,11 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, col, select
 
+from app.auth import CurrentUser, create_access_token, hash_password, verify_password
 from app.database import create_db, get_session
 from app.models import (
     Application,
@@ -17,6 +19,10 @@ from app.models import (
     ApplicationRead,
     ApplicationUpdate,
     Status,
+    Token,
+    User,
+    UserCreate,
+    UserRead,
 )
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -49,7 +55,34 @@ def get_or_404(session: Session, application_id: int) -> Application:
         raise HTTPException(status_code=404, detail="Application not found")
     return application
 
+@app.post("/auth/signup", response_model=UserRead, status_code=201)
+def signup(data: UserCreate, session: SessionDep):
+    existing = session.exec(select(User).where(User.username == data.username)).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Username already taken")
 
+    user = User(username=data.username, hashed_password=hash_password(data.password))
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@app.post("/auth/login", response_model=Token)
+def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep):
+    user = session.exec(select(User).where(User.username == form.username)).first()
+    if user is None or not verify_password(form.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return Token(access_token=create_access_token(user.id))
+
+
+@app.get("/auth/me", response_model=UserRead)
+def read_me(current_user: CurrentUser):
+    return current_user
 
 
 
