@@ -97,3 +97,8 @@ def test_export_csv(client):
     response = client.get("/export")
     assert response.status_code == 200
     assert "Acme" in response.text
+
+def test_home_page(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "JobTrack" in response.text

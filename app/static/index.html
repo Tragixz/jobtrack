@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobTrack</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>JobTrack</h1>
+    <p>Track every job application in one place.</p>
+  </header>
+
+  <main>
+    <section id="stats" class="stats"></section>
+
+    <section class="card">
+      <h2>Add an application</h2>
+      <form id="add-form">
+        <label>Company
+          <input name="company" required maxlength="100">
+        </label>
+        <label>Role
+          <input name="role" required maxlength="100">
+        </label>
+        <label>Job posting URL
+          <input name="url" type="url" placeholder="https://...">
+        </label>
+        <label>Follow up on
+          <input name="follow_up_on" type="date">
+        </label>
+        <label class="full">Notes
+          <textarea name="notes" rows="2"></textarea>
+        </label>
+        <div class="full">
+          <button type="submit">Add application</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Follow-ups due</h2>
+      <ul id="follow-ups" class="follow-ups"></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Your applications</h2>
+        <div class="toolbar">
+          <select id="status-filter">
+            <option value="">All statuses</option>
+            <option value="applied">Applied</option>
+            <option value="interviewing">Interviewing</option>
+            <option value="offer">Offer</option>
+            <option value="rejected">Rejected</option>
+            <option value="ghosted">Ghosted</option>
+          </select>
+          <a href="/export" class="button button-secondary">Export CSV</a>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Applied</th>
+              <th>Follow up</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="applications"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
